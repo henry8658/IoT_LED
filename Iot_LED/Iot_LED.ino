@@ -9,17 +9,17 @@
 #include <MD_MAX72xx.h>
 
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
-#define MAX_DEVICES 4
 
+const int MAX_DEVICES = 4;
 const int CLK_PIN = D7, CS_PIN = D6, DATA_PIN = D5;
+const int SPEED_TIME  25
+const int PAUSE_TIME  1000
 
+// initiate MD_Parola object 
 MD_Parola P = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 
-#define SPEED_TIME  25
-#define PAUSE_TIME  1000
-
-// Global variables
 uint8_t  curText;
+
 const char  *pc[] =
 {
   "Henry"
