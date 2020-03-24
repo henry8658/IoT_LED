@@ -12,80 +12,132 @@
 
 const int MAX_DEVICES = 4;
 const int CLK_PIN = D7, CS_PIN = D6, DATA_PIN = D5;
-const int SPEED_TIME  25
-const int PAUSE_TIME  1000
+const int SPEED_TIME = 200;
+const int PAUSE_TIME = 1000;
 
 // initiate MD_Parola object 
 MD_Parola P = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 
-uint8_t  curText;
+uint8_t scrollSpeed = 500;    // default frame delay value
+textEffect_t scrollEffect = PA_SCROLL_LEFT;
+textPosition_t scrollAlign = PA_LEFT;
+uint16_t scrollPause = 500; // in milliseconds
 
-const char  *pc[] =
-{
-  "Henry"
+// Global message buffers shared by Serial and Scrolling functions
+const int BUF_SIZE = 75;
+char curMessage[BUF_SIZE] = { "" };
+char newMessage[BUF_SIZE] = { "Hello! Enter new message?" };
+bool newMessageAvailable = true;
+
+
+
+uint8_t Left[] = 
+{ 
+  9,
+  B00011000,
+  B00111100,
+  B01111110,
+  B11111111,
+  B00111100,
+  B00111100,
+  B00111100,
+  B00111100,
+  B00000000,
 };
 
-uint8_t  inFX, outFX;
-textEffect_t  effect[] =
-{
-  PA_PRINT,
-  PA_SCAN_HORIZ,
-  PA_SCROLL_LEFT,
-  PA_WIPE,
-  PA_SCROLL_UP_LEFT,
-  PA_SCROLL_UP,
-  PA_OPENING_CURSOR,
-  PA_GROW_UP,
-  PA_MESH,
-  PA_SCROLL_UP_RIGHT,
-  PA_BLINDS,
-  PA_CLOSING,
-  PA_RANDOM,
-  PA_GROW_DOWN,
-  PA_SCAN_VERT,
-  PA_SCROLL_DOWN_LEFT,
-  PA_WIPE_CURSOR,
-  PA_DISSOLVE,
-  PA_OPENING,
-  PA_CLOSING_CURSOR,
-  PA_SCROLL_DOWN_RIGHT,
-  PA_SCROLL_RIGHT,
-  PA_SLICE,
-  PA_SCROLL_DOWN,
+
+uint8_t Right[] = 
+{ 
+  9,
+  B00000000,
+  B00111100,
+  B00111100,
+  B00111100,
+  B00111100,
+  B11111111,
+  B01111110,
+  B00111100,
+  B00011000,
 };
 
-void setup(void)
+uint8_t Mid[] = 
+{ 
+  10,
+  B11110000,
+  B11110000,
+  B11110000,
+  B11111111,
+  B11111111,
+  B11111111,
+  B11100000,
+  B11100000,
+  B11000000,
+  B11000000,
+};
+
+void readSerial(void)
 {
-  P.begin();
-  P.setInvert(false);
-  P.displayText(pc[curText], PA_CENTER, SPEED_TIME, PAUSE_TIME, effect[inFX], effect[outFX]);
+  static char *cp = newMessage;
+
+  while (Serial.available())
+  {
+    *cp = (char)Serial.read();
+    if ((*cp == '\n') || (cp - newMessage >= BUF_SIZE-2)) // end of message character or full buffer
+    {
+      *cp = '\0'; // end the string
+      // restart the index for next filling spree and flag we have a message waiting
+      cp = newMessage;
+      newMessageAvailable = true;
+    }
+    else  // move char pointer to next position
+      cp++;
+  }
 }
 
-void loop(void)
+void setup()
 {
+  Serial.begin(57600);
 
-  if (P.displayAnimate()) // animates and returns true when an animation is completed
-  {
-    // Set the display for the next string.
-    curText = (curText + 1) % ARRAY_SIZE(pc);
-    P.setTextBuffer(pc[curText]);
+  P.begin();
+  P.addChar('<', Left);
+  P.addChar('>', Right);
+  P.addChar('^', Mid);
+  //P.displayText(curMessage, scrollAlign, scrollSpeed, scrollPause, scrollEffect, scrollEffect);
+}
 
-    // When we have gone back to the first string, set a new exit effect
-    // and when we have done all those set a new entry effect.
-    if (curText == 0)
-    {
-      outFX = (outFX + 1) % ARRAY_SIZE(effect);
-      if (outFX == 0)
-      {
-        inFX = (inFX + 1) % ARRAY_SIZE(effect);
-        if (inFX == 0)
-          P.setInvert(!P.getInvert());
-      }
+void loop()
+{
+//  if (P.displayAnimate())
+//  {
+//    if (newMessageAvailable)
+//    {
+//      strcpy(curMessage, newMessage);
+//      newMessageAvailable = false;
+//    }
+//    P.displayReset();
+//  }
+//  readSerial();
+  test3();
+  P.displayReset();
+}
 
-      P.setTextEffect(effect[inFX], effect[outFX]);
-    }
 
-    // Tell Parola we have a new animation
-    P.displayReset();
-  }
+
+void test1()
+{
+  P.displayText(">", PA_RIGHT, scrollSpeed, scrollPause, PA_PRINT, PA_PRINT);
+  while(!P.displayAnimate());
+}
+
+
+void test()
+{
+  P.displayText(">", scrollAlign, scrollSpeed, scrollPause, PA_PRINT, PA_PRINT);
+  while(!P.displayAnimate());
+}
+
+void test3()
+{
+  P.displayText("^", PA_CENTER, scrollSpeed, scrollPause, PA_PRINT, PA_PRINT);
+  while(!P.displayAnimate());
 }
